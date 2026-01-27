@@ -1,0 +1,135 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.7'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.openapi.generator' version '7.13.0'
+}
+
+def packageName = "com.espiedra.api.customer.service"
+
+springBoot {
+	mainClass = "${packageName}.MainApplication"
+}
+
+group = "${packageName}"
+version = '1.0.0-SNAPSHOT'
+description = 'Microservicio de Gestión de Clientes y Personas'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// Spring Boot Starters
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+	// OpenAPI/Swagger
+	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.14'
+
+	// Kafka Reactive
+	implementation 'org.springframework.kafka:spring-kafka'
+	implementation 'io.projectreactor.kafka:reactor-kafka:1.3.23'
+
+	// JWT
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+	// BCrypt (incluido en Spring Security)
+
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// MapStruct (DDD - Mappers)
+	implementation 'org.mapstruct:mapstruct:1.6.3'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+
+	// Logback structured logging (JSON)
+	implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
+
+	// Database
+	runtimeOnly 'org.postgresql:postgresql'
+	runtimeOnly 'org.postgresql:r2dbc-postgresql'
+
+	// Development
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// Testing
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'org.springframework.kafka:spring-kafka-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'io.projectreactor.tools:blockhound:1.0.9.RELEASE'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// Testcontainers for Integration Tests
+	testImplementation 'org.testcontainers:testcontainers:1.20.4'
+	testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
+	testImplementation 'org.testcontainers:postgresql:1.20.4'
+	testImplementation 'org.testcontainers:r2dbc:1.20.4'
+}
+
+tasks.register('buildSpringServer', GenerateTask) {
+	generatorName = "spring"
+	templateDir ="$rootDir/src/main/resources/openapi-templates"
+	inputSpec = "$rootDir/src/main/resources/openapi.yaml".toString()
+	outputDir = "$buildDir/generated".toString()
+	apiPackage = "${packageName}.infrastructure.input.adapter.rest.customer.service.api"
+	modelPackage = "${packageName}.infrastructure.input.adapter.rest.customer.service.models"
+	library = "spring-boot"
+	configOptions = [
+			skipDefaultInterface                    : "true",
+			useSpringBoot3                          : "true",
+			useJakartaEe                            : "true",
+			serializableModel                       : "true",
+			dateLibrary                             : "java8",
+			openApiNullable                         : "false",
+			reactive                                : "true",
+			apiFirst                                : "false",
+			delegatePattern                         : "false",
+			configPackage                           : "${packageName}.infrastructure.input.adapter.config",
+			sourceFolder                            : "src/main/java",
+			basePackage                             : "${packageName}",
+			disallowAdditionalPropertiesIfNotPresent: "true",
+			interfaceOnly                           : "true"
+	]
+}
+
+compileJava {
+	dependsOn buildSpringServer
+	options.compilerArgs += [
+			"-Amapstruct.suppressGeneratorTimestamp=true",
+			"-Amapstruct.suppressGeneratorVersionInfoComment=true",
+			"-Amapstruct.verbose=true",
+			"-Amapstruct.defaultComponentModel=spring"
+	]
+}
+
+sourceSets.main.java.srcDirs = ["$buildDir/generated/src/main/java", "src/main/java"]
+
+springBoot{
+	buildInfo()
+}
+
+test {
+	useJUnitPlatform()
+}

@@ -1,0 +1,98 @@
+variables:
+  own:
+    config:
+      # Server Configuration
+      - name: "SERVER_PORT"
+        value: "8081"
+
+      # Database Configuration
+      - name: "DATABASE_URL"
+        value: "r2dbc:postgresql://prod-postgres-service:5432/customer_db_prod"
+
+      # Kafka Configuration
+      - name: "KAFKA_BOOTSTRAP_SERVERS"
+        value: "prod-kafka-service:9092"
+      - name: "KAFKA_TOPIC_CUSTOMER_EVENTS"
+        value: "banking.customer.events"
+
+      # Environment
+      - name: "ENVIRONMENT"
+        value: "production"
+
+      # Spring Profile
+      - name: "SPRING_PROFILES_ACTIVE"
+        value: "production"
+
+      # Logging Levels (WARN/INFO for production)
+      - name: "LOG_LEVEL"
+        value: "INFO"
+      - name: "R2DBC_LOG_LEVEL"
+        value: "WARN"
+      - name: "KAFKA_LOG_LEVEL"
+        value: "WARN"
+      - name: "SECURITY_LOG_LEVEL"
+        value: "WARN"
+      - name: "NETTY_LOG_LEVEL"
+        value: "WARN"
+
+      # Security Configuration (MUST be enabled in production)
+      - name: "SECURITY_ENABLED"
+        value: "true"
+      - name: "CORS_ALLOWED_ORIGINS"
+        value: "https://app.espiedra.com,https://banking.espiedra.com"
+
+      # Password Encoder (Higher strength for production)
+      - name: "PASSWORD_ENCODER_STRENGTH"
+        value: "12"
+
+      # Swagger/OpenAPI (Disabled in production for security)
+      - name: "SWAGGER_ENABLED"
+        value: "false"
+
+    secret:
+      # Database Credentials
+      - name: "DATABASE_USERNAME"
+        value: "customer_user_prod"
+      - name: "DATABASE_PASSWORD"
+        value: "prod_secure_password_database"
+
+      # JWT Configuration (Production - MUST use strong secrets)
+      # IMPORTANT: These MUST be injected from Kubernetes Secrets or external secret management
+      - name: "JWT_SECRET"
+        value: "espiedra-prod-jwt-secret-key-for-production-purposes-only"
+      - name: "JWT_EXPIRATION"
+        value: "86400000" # 24 hours
+      - name: "JWT_ISSUER"
+        value: "api-customer-service-production"
+      - name: "JWT_AUDIENCE"
+        value: "espiedra-microservices-production"
+
+      # Spring Security Basic Auth (Production)
+      - name: "SECURITY_USER"
+        value: "prod-admin"
+      - name: "SECURITY_PASSWORD"
+        value: "prod-admin-password"
+
+  common:
+    config:
+      - name: "ENVIRONMENT"
+        value: "production"
+      - name: "TZ"
+        value: "UTC"
+      # JVM Options for production
+      - name: "JAVA_OPTS"
+        value: "-Xms512m -Xmx2048m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+    secret: {}
+
+# Production Deployment Notes:
+# =============================
+# 1. Replace all "CHANGE_ME_USE_K8S_SECRET" values with proper Kubernetes Secrets
+# 2. Use external secret management (e.g., HashiCorp Vault, AWS Secrets Manager)
+# 3. Implement pod security policies and network policies
+# 4. Configure resource limits and requests
+# 5. Enable horizontal pod autoscaling (HPA)
+# 6. Configure readiness and liveness probes
+# 7. Use dedicated database instances with high availability
+# 8. Implement backup and disaster recovery procedures
+# 9. Set up monitoring and alerting (Prometheus, Grafana)
+# 10. Configure log aggregation (ELK Stack, Splunk, etc.)

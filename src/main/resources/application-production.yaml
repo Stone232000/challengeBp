@@ -1,0 +1,182 @@
+# =====================================================
+# Customer Service - Production Environment Configuration
+# Technical Assessment - Senior Level
+# =====================================================
+
+# =====================================================
+# Logging Configuration - Production
+# =====================================================
+logging:
+  level:
+    root: WARN
+    com.espiedra.api.customer.service: ${LOG_LEVEL:INFO}
+    org.springframework.r2dbc: ${R2DBC_LOG_LEVEL:WARN}
+    org.springframework.kafka: ${KAFKA_LOG_LEVEL:WARN}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:WARN}
+    reactor.netty: ${NETTY_LOG_LEVEL:WARN}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId}] [%X{requestId}] [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/${spring.application.name}-production.log
+    max-size: 50MB
+    max-history: 90
+    total-size-cap: 5GB
+
+# =====================================================
+# Application Custom Properties - Production
+# =====================================================
+app:
+  # Security - MUST be enabled in production
+  security:
+    enabled: true
+    public-endpoints:
+      - /api/v1/customers # POST create customer is public (returns JWT)
+      - /actuator/health
+      - /actuator/info
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:https://app.espiedra.com,https://banking.espiedra.com}
+      allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      allowed-headers: "*"
+      exposed-headers: X-Request-Id,X-Correlation-Id
+      allow-credentials: true
+      max-age: 3600
+
+  # JWT Configuration - Production (MUST use strong secret from environment)
+  jwt:
+    secret: ${JWT_SECRET} # REQUIRED from environment variable - NO DEFAULT
+    expiration: ${JWT_EXPIRATION:86400000} # 24 hours in milliseconds
+    issuer: ${JWT_ISSUER:api-customer-service-production}
+    audience: ${JWT_AUDIENCE:espiedra-microservices-production}
+
+  # Password Encoding - Strong encryption for production
+  password:
+    encoder:
+      strength: ${PASSWORD_ENCODER_STRENGTH:12} # Higher strength for production
+
+  # Kafka Topics - Production
+  kafka:
+    topics:
+      customer-events: ${KAFKA_TOPIC_CUSTOMER_EVENTS:banking.customer.events}
+    producer:
+      client-id: ${spring.application.name}-producer-production
+
+  # Pagination Defaults
+  pagination:
+    default-page: 0
+    default-size: 20
+    max-size: 100
+
+  # API Configuration
+  api:
+    version: '@project.version@'
+    title: 'Customer Service API - Production'
+    description: 'Microservicio de Gestión de Clientes y Personas'
+    contact:
+      name: 'Emilio Piedra'
+      email: 'emiliopiedra2000@gmail.com'
+    base-path: /api/v1
+
+  # Correlation & Request Tracing
+  tracing:
+    correlation-id-header: X-Correlation-Id
+    request-id-header: X-Request-Id
+    enabled: true
+
+  # Database Configuration
+  database:
+    schema: public
+    connection-timeout: 3000
+    query-timeout: 5000
+
+# =====================================================
+# R2DBC PostgreSQL Configuration - Production
+# =====================================================
+spring:
+  r2dbc:
+    url: ${DATABASE_URL} # REQUIRED from environment variable - NO DEFAULT
+    username: ${DATABASE_USERNAME} # REQUIRED from environment variable - NO DEFAULT
+    password: ${DATABASE_PASSWORD} # REQUIRED from environment variable - NO DEFAULT
+    pool:
+      enabled: true
+      initial-size: 20
+      max-size: 50
+      max-idle-time: 30m
+      max-acquire-time: 5s
+      max-create-connection-time: 5s
+      validation-query: SELECT 1
+
+  # Kafka Configuration - Production
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS} # REQUIRED from environment variable - NO DEFAULT
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 5
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        linger.ms: 10
+        compression.type: snappy
+    properties:
+      client.id: ${spring.application.name}-production
+
+# =====================================================
+# Management & Actuator - Production (Restricted)
+# =====================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: never # Security: Don't expose details in production
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: production
+    export:
+      prometheus:
+        enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+# =====================================================
+# Server Configuration - Production
+# =====================================================
+server:
+  port: ${SERVER_PORT:8081}
+  error:
+    include-message: always
+    include-binding-errors: never # Security: Don't expose binding errors
+    include-stacktrace: never # Security: Don't expose stack traces
+    include-exception: false
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+  http2:
+    enabled: true
+
+# =====================================================
+# SpringDoc OpenAPI - Production (Disabled for security)
+# =====================================================
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false} # Disabled by default in production
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false} # Disabled by default in production

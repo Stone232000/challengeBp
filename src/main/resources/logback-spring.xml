@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--
+        Logback Configuration - Structured Logging
+
+        This configuration provides structured JSON logging for production
+        and readable console logging for development.
+
+        Features:
+        - JSON formatted logs for production (easy parsing by log aggregators)
+        - Colorized console logs for development
+        - Correlation ID and Request ID tracking
+        - File appenders with rolling policy
+    -->
+
+    <!-- Property definitions -->
+    <springProperty scope="context" name="applicationName" source="spring.application.name" defaultValue="api-customer-service"/>
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+
+    <!-- Console Appender (Development) - Simple pattern without color -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- JSON Console Appender (Production) -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"service":"${applicationName}"}</customFields>
+            <includeMdcKeyName>correlationId</includeMdcKeyName>
+            <includeMdcKeyName>requestId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+            <fieldNames>
+                <timestamp>timestamp</timestamp>
+                <message>message</message>
+                <logger>logger</logger>
+                <thread>thread</thread>
+                <level>level</level>
+                <levelValue>levelValue</levelValue>
+                <stackTrace>stackTrace</stackTrace>
+            </fieldNames>
+        </encoder>
+    </appender>
+
+    <!-- File Appender (Rolling) -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/customer-service.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/customer-service-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"service":"${applicationName}"}</customFields>
+            <includeMdcKeyName>correlationId</includeMdcKeyName>
+            <includeMdcKeyName>requestId</includeMdcKeyName>
+        </encoder>
+    </appender>
+
+    <!-- Async Appender for better performance -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+    </appender>
+
+    <!-- Logger configurations -->
+
+    <!-- Application loggers -->
+    <logger name="com.espiedra.api.customer.service" level="${LOG_LEVEL:-INFO}" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+    </logger>
+
+    <!-- Spring Framework -->
+    <logger name="org.springframework" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Spring Security -->
+    <logger name="org.springframework.security" level="${SECURITY_LOG_LEVEL:-INFO}" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- R2DBC (Reactive Database) -->
+    <logger name="io.r2dbc" level="${R2DBC_LOG_LEVEL:-INFO}" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Reactor Netty -->
+    <logger name="reactor.netty" level="${NETTY_LOG_LEVEL:-INFO}" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Kafka -->
+    <logger name="org.apache.kafka" level="${KAFKA_LOG_LEVEL:-INFO}" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- MapStruct -->
+    <logger name="org.mapstruct" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+    </root>
+
+    <!-- Profile-specific configurations -->
+
+    <!-- Development profile: Colorized console, DEBUG level -->
+    <springProfile name="dev,development">
+        <logger name="com.espiedra.api.customer.service" level="DEBUG" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+        </logger>
+
+        <logger name="io.r2dbc" level="DEBUG" additivity="false">
+            <appender-ref ref="CONSOLE"/>
+        </logger>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- Production profile: JSON structured logging -->
+    <springProfile name="prod,production">
+        <logger name="com.espiedra.api.customer.service" level="INFO" additivity="false">
+            <appender-ref ref="JSON_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+        </logger>
+
+        <root level="WARN">
+            <appender-ref ref="JSON_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+        </root>
+    </springProfile>
+
+</configuration>

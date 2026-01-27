@@ -1,0 +1,77 @@
+# =====================================================
+# Customer Service - TEST Configuration
+# For Integration Tests
+# =====================================================
+
+spring:
+  application:
+    name: api-customer-service-test
+
+  # =====================================================
+  # R2DBC H2 Configuration (In-Memory Database for Tests)
+  # =====================================================
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb?options=DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    username: sa
+    password:
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 10
+
+  # =====================================================
+  # H2 Console (for debugging tests)
+  # =====================================================
+  h2:
+    console:
+      enabled: false
+
+  # =====================================================
+  # SQL Initialization (Create tables for tests)
+  # =====================================================
+  sql:
+    init:
+      mode: always
+      platform: h2
+
+# =====================================================
+# Server Configuration
+# =====================================================
+server:
+  port: 0 # Random port for tests
+
+# =====================================================
+# Logging Configuration (minimal for tests)
+# =====================================================
+logging:
+  level:
+    root: WARN
+    com.espiedra.api.customer.service: INFO
+    org.springframework.r2dbc: WARN
+    io.r2dbc.h2: WARN
+
+# =====================================================
+# Application Custom Properties (test values)
+# =====================================================
+app:
+  jwt:
+    secret: test-jwt-secret-key
+    expiration: 3600000
+    issuer: api-customer-service-test
+    audience: test-audience
+
+  kafka:
+    topics:
+      customer-events: test.customer.events
+
+  pagination:
+    default-page: 0
+    default-size: 20
+    max-size: 100
+
+  security:
+    enabled: false # Disable security for tests
+
+  password:
+    encoder:
+      strength: 4 # Lower strength for faster tests

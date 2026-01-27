@@ -1,0 +1,81 @@
+variables:
+  own:
+    config:
+      # Server Configuration
+      - name: "SERVER_PORT"
+        value: "8081"
+
+      # Database Configuration
+      - name: "DATABASE_URL"
+        value: "r2dbc:postgresql://test-postgres-service:5432/customer_db_test"
+
+      # Kafka Configuration
+      - name: "KAFKA_BOOTSTRAP_SERVERS"
+        value: "test-kafka-service:9092"
+      - name: "KAFKA_TOPIC_CUSTOMER_EVENTS"
+        value: "banking.customer.events.test"
+
+      # Environment
+      - name: "ENVIRONMENT"
+        value: "test"
+
+      # Spring Profile
+      - name: "SPRING_PROFILES_ACTIVE"
+        value: "staging"
+
+      # Logging Levels (INFO for test environment)
+      - name: "LOG_LEVEL"
+        value: "INFO"
+      - name: "R2DBC_LOG_LEVEL"
+        value: "INFO"
+      - name: "KAFKA_LOG_LEVEL"
+        value: "INFO"
+      - name: "SECURITY_LOG_LEVEL"
+        value: "INFO"
+      - name: "NETTY_LOG_LEVEL"
+        value: "INFO"
+
+      # Security Configuration (Enabled for test)
+      - name: "SECURITY_ENABLED"
+        value: "true"
+      - name: "CORS_ALLOWED_ORIGINS"
+        value: "http://test-frontend:3000,https://test.espiedra.com"
+
+      # Password Encoder
+      - name: "PASSWORD_ENCODER_STRENGTH"
+        value: "10"
+
+      # Swagger/OpenAPI (Enabled for test)
+      - name: "SWAGGER_ENABLED"
+        value: "true"
+
+    secret:
+      # Database Credentials
+      - name: "DATABASE_USERNAME"
+        value: "customer_user_test"
+      - name: "DATABASE_PASSWORD"
+        value: "test_secure_password_database"
+
+      # JWT Configuration (Test environment - shorter expiration)
+      - name: "JWT_SECRET"
+        value: "espiedra-test-jwt-secret-key-for-testing-purposes-only"
+      - name: "JWT_EXPIRATION"
+        value: "43200000" # 12 hours for testing
+      - name: "JWT_ISSUER"
+        value: "api-customer-service-test"
+      - name: "JWT_AUDIENCE"
+        value: "espiedra-microservices-test"
+
+      # Spring Security Basic Auth (for test environment)
+      - name: "SECURITY_USER"
+        value: "test-admin"
+      - name: "SECURITY_PASSWORD"
+        value: "test-admin-password"
+
+  common:
+    config:
+      - name: "ENVIRONMENT"
+        value: "test"
+      - name: "TZ"
+        value: "UTC"
+    secret: {}

@@ -1,0 +1,176 @@
+# =====================================================
+# Customer Service - Staging Environment Configuration
+# Technical Assessment - Senior Level
+# =====================================================
+
+# =====================================================
+# Logging Configuration - Staging
+# =====================================================
+logging:
+  level:
+    root: INFO
+    com.espiedra.api.customer.service: ${LOG_LEVEL:INFO}
+    org.springframework.r2dbc: ${R2DBC_LOG_LEVEL:INFO}
+    org.springframework.kafka: ${KAFKA_LOG_LEVEL:INFO}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:INFO}
+    reactor.netty: ${NETTY_LOG_LEVEL:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId}] [%X{requestId}] [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/${spring.application.name}-staging.log
+    max-size: 10MB
+    max-history: 30
+    total-size-cap: 1GB
+
+# =====================================================
+# Application Custom Properties - Staging
+# =====================================================
+app:
+  # Security - Enabled for staging (testing production-like behavior)
+  security:
+    enabled: ${SECURITY_ENABLED:true}
+    public-endpoints:
+      - /api/v1/customers # POST create customer is public (returns JWT)
+      - /actuator/health
+      - /actuator/info
+      - /api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /webjars/**
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,https://staging.espiedra.com}
+      allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      allowed-headers: "*"
+      exposed-headers: X-Request-Id,X-Correlation-Id
+      allow-credentials: true
+      max-age: 3600
+
+  # JWT Configuration - Staging (shorter expiration for testing)
+  jwt:
+    secret: ${JWT_SECRET:espiedra-staging-jwt-secret-key-change-in-production}
+    expiration: ${JWT_EXPIRATION:43200000} # 12 hours in milliseconds (shorter for staging)
+    issuer: ${JWT_ISSUER:api-customer-service-staging}
+    audience: ${JWT_AUDIENCE:espiedra-microservices-staging}
+
+  # Password Encoding - Same as production
+  password:
+    encoder:
+      strength: ${PASSWORD_ENCODER_STRENGTH:10}
+
+  # Kafka Topics - Staging specific topics
+  kafka:
+    topics:
+      customer-events: ${KAFKA_TOPIC_CUSTOMER_EVENTS:banking.customer.events.staging}
+    producer:
+      client-id: ${spring.application.name}-producer-staging
+
+  # Pagination Defaults
+  pagination:
+    default-page: 0
+    default-size: 20
+    max-size: 100
+
+  # API Configuration
+  api:
+    version: '@project.version@'
+    title: 'Customer Service API - Staging'
+    description: 'Microservicio de Gestión de Clientes y Personas - Ambiente de Staging'
+    contact:
+      name: 'Emilio Piedra'
+      email: 'emiliopiedra2000@gmail.com'
+    base-path: /api/v1
+
+  # Correlation & Request Tracing
+  tracing:
+    correlation-id-header: X-Correlation-Id
+    request-id-header: X-Request-Id
+    enabled: true
+
+  # Database Configuration
+  database:
+    schema: public
+    connection-timeout: 3000
+    query-timeout: 5000
+
+# =====================================================
+# R2DBC PostgreSQL Configuration - Staging
+# =====================================================
+spring:
+  r2dbc:
+    url: ${DATABASE_URL:r2dbc:postgresql://staging-db.espiedra.com:5432/customer_db_staging}
+    username: ${DATABASE_USERNAME:customer_user_staging}
+    password: ${DATABASE_PASSWORD}
+    pool:
+      enabled: true
+      initial-size: 15
+      max-size: 30
+      max-idle-time: 30m
+      max-acquire-time: 3s
+      max-create-connection-time: 3s
+      validation-query: SELECT 1
+
+  # Kafka Configuration - Staging
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:staging-kafka.espiedra.com:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        linger.ms: 10
+        compression.type: snappy
+    properties:
+      client.id: ${spring.application.name}-staging
+
+# =====================================================
+# Management & Actuator - Staging
+# =====================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: staging
+    export:
+      prometheus:
+        enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+# =====================================================
+# SpringDoc OpenAPI - Staging (Enabled for testing)
+# =====================================================
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    display-request-duration: true
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: false

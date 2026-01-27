@@ -1,0 +1,929 @@
+openapi: 3.0.3
+info:
+  title: Customer Service API
+  description: |
+    **Microservicio de Gestión de Clientes y Personas**
+
+    Este microservicio maneja toda la lógica de negocio relacionada con:
+    - Gestión de clientes (CRUD completo)
+    - Información personal heredada de Persona
+    - Validaciones de integridad de datos
+    - Seguridad y encriptación de contraseñas
+
+    **Arquitectura:**
+    - Spring Boot + WebFlux (Reactivo)
+    - Arquitectura Hexagonal (Ports & Adapters)
+    - Contract-First approach
+    - Comunicación asíncrona con Account Service
+
+    ---
+    **Senior Level** - Technical Assessment `2025`
+  contact:
+    name: Emilio Piedra
+    email: emiliopiedra2000@gmail.com
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8081/api/v1
+    description: Local Development
+  - url: https://dev-customer-api.espiedra.com/api/v1
+    description: Development Environment
+  - url: https://customer-api.espiedra.com/api/v1
+    description: Production Environment
+
+tags:
+  - name: Customers
+    description: Operaciones CRUD sobre entidad Cliente
+  - name: Health
+    description: Endpoints de health check y monitoreo
+
+security:
+  - Authorization: []
+
+paths:
+  /customers:
+    get:
+      tags:
+        - Customers
+      summary: Obtiene listado paginado de clientes
+      description: |
+        Retorna una lista paginada de clientes con sus datos personales.
+        Soporta filtrado, ordenamiento y paginación.
+      operationId: getCustomers
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - $ref: '#/components/parameters/SortParam'
+        - name: name
+          in: query
+          description: Filtrar por nombre (búsqueda parcial)
+          required: false
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+        - name: identification
+          in: query
+          description: Filtrar por número de identificación
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{10}$'
+        - name: state
+          in: query
+          description: Filtrar por estado activo/inactivo
+          required: false
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '200':
+          description: Listado de clientes recuperado exitosamente
+          headers:
+            X-Total-Count:
+              description: Total de registros disponibles
+              schema:
+                type: integer
+            X-Page-Number:
+              description: Número de página actual
+              schema:
+                type: integer
+            X-Page-Size:
+              description: Tamaño de página
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPageResponse'
+              examples:
+                SuccessfulResponse:
+                  $ref: '#/components/examples/CustomersPageExample'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+    post:
+      tags:
+        - Customers
+      summary: Crea un nuevo cliente
+      description: |
+        Crea un nuevo cliente en el sistema con sus datos personales.
+
+        **Validaciones de negocio:**
+        - La identificación debe ser única
+        - El teléfono debe tener formato válido
+        - La contraseña debe cumplir políticas de seguridad
+        - La edad debe ser mayor o igual a 18 años
+
+        **Autenticación:**
+        - Este endpoint retorna un token JWT en la respuesta
+        - Usa este token en el header `Authorization: Bearer {token}` para futuras peticiones
+        - El token tiene una validez de 24 horas
+      operationId: createCustomer
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      requestBody:
+        required: true
+        description: Datos del cliente a crear
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerCreateRequest'
+            examples:
+              ValidCustomer:
+                $ref: '#/components/examples/CreateCustomerExample'
+      responses:
+        '201':
+          description: Cliente creado exitosamente
+          headers:
+            Location:
+              description: URI del recurso creado
+              schema:
+                type: string
+                format: uri
+                example: /api/v1/customers/550e8400-e29b-41d4-a716-446655440000
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+              examples:
+                CreatedCustomer:
+                  $ref: '#/components/examples/CustomerResponseExample'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Conflicto - Cliente ya existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                DuplicateIdentification:
+                  value:
+                    timestamp: "2025-11-06T10:30:00.000Z"
+                    status: 409
+                    error: "Conflict"
+                    message: "Customer with identification 0705463420 already exists"
+                    path: "/api/v1/customers"
+                    traceId: "550e8400-e29b-41d4-a716-446655440000"
+                    errors:
+                      - field: "identification"
+                        message: "Duplicate identification number"
+                        rejectedValue: "0705463420"
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /customers/{customerId}:
+    get:
+      tags:
+        - Customers
+      summary: Obtiene un cliente por ID
+      description: Retorna los datos completos de un cliente específico
+      operationId: getCustomerById
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '200':
+          description: Cliente encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+              examples:
+                CustomerFound:
+                  $ref: '#/components/examples/CustomerResponseExample'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Customers
+      summary: Actualiza un cliente existente
+      description: |
+        Actualiza todos los datos de un cliente existente.
+
+        **Notas importantes:**
+        - La identificación no puede ser modificada
+        - Si se actualiza el estado a false, se publicará evento de desactivación
+      operationId: updateCustomer
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      requestBody:
+        required: true
+        description: Datos actualizados del cliente
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerUpdateRequest'
+            examples:
+              UpdateCustomer:
+                $ref: '#/components/examples/UpdateCustomerExample'
+      responses:
+        '200':
+          description: Cliente actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - Customers
+      summary: Actualización parcial de cliente
+      description: |
+        Permite actualizar campos específicos del cliente sin enviar todos los datos.
+        Útil para operaciones como cambio de estado o actualización de contraseña.
+      operationId: patchCustomer
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      requestBody:
+        required: true
+        description: Campos a actualizar (JSON Patch)
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerPatchRequest'
+            examples:
+              ChangeState:
+                summary: Cambiar estado del cliente
+                value:
+                  state: false
+              ChangePassword:
+                summary: Cambiar contraseña
+                value:
+                  password: "newSecureP@ssw0rd123"
+      responses:
+        '200':
+          description: Cliente actualizado parcialmente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Customers
+      summary: Elimina un cliente (soft delete)
+      description: |
+        Realiza una eliminación lógica del cliente.
+
+        **Comportamiento:**
+        - Marca el estado como false
+        - Publica evento de eliminación a Account Service
+        - Las cuentas asociadas serán desactivadas de forma asíncrona
+        - No se elimina físicamente del sistema
+      operationId: deleteCustomer
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '204':
+          description: Cliente eliminado exitosamente (sin contenido)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflicto - Cliente tiene cuentas activas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ActiveAccounts:
+                  value:
+                    timestamp: "2025-11-06T10:30:00.000Z"
+                    status: 409
+                    error: "Conflict"
+                    message: "Cannot delete customer with active accounts"
+                    path: "/api/v1/customers/550e8400-e29b-41d4-a716-446655440000"
+                    traceId: "550e8400-e29b-41d4-a716-446655440000"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /customers/{customerId}/validate:
+    get:
+      tags:
+        - Customers
+      summary: Valida si un cliente existe y está activo
+      description: |
+        Endpoint utilizado por Account Service para validar clientes.
+        Retorna información mínima para optimizar comunicación entre servicios.
+      operationId: validateCustomer
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '200':
+          description: Cliente válido y activo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerValidationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Cliente existe pero está inactivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check del servicio
+      description: Retorna el estado del servicio y sus dependencias
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: Servicio saludable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Servicio degradado o no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    Authorization:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT en el header Authorization.
+        Formato: Authorization: Bearer {token}
+
+  parameters:
+    CustomerIdParam:
+      name: customerId
+      in: path
+      description: Identificador único del cliente (UUID)
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+
+    PageParam:
+      name: page
+      in: query
+      description: Número de página (0-indexed)
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    SizeParam:
+      name: size
+      in: query
+      description: Tamaño de página
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    SortParam:
+      name: sort
+      in: query
+      description: Campo de ordenamiento (ej. name,asc o createdAt,desc)
+      required: false
+      schema:
+        type: string
+        default: "createdAt,desc"
+        pattern: '^[a-zA-Z]+(,(asc|desc))?$'
+
+    XRequestId:
+      name: X-Request-Id
+      in: header
+      description: ID único de la petición para trazabilidad
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+
+    XCorrelationId:
+      name: X-Correlation-Id
+      in: header
+      description: ID de correlación para trazar operaciones entre servicios
+      required: false
+      schema:
+        $ref: '#/components/schemas/UUID'
+
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+      minLength: 36
+      maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+    CustomerCreateRequest:
+      type: object
+      required:
+        - name
+        - gender
+        - age
+        - identification
+        - address
+        - phone
+        - password
+      properties:
+        name:
+          type: string
+          description: Nombre completo del cliente
+          minLength: 3
+          maxLength: 100
+          pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$'
+          example: "Emilio Piedra"
+        gender:
+          type: string
+          description: Género del cliente
+          enum: [M, F, O]
+          example: "M"
+        age:
+          type: integer
+          description: Edad del cliente
+          minimum: 18
+          maximum: 120
+          example: 35
+        identification:
+          type: string
+          description: Número de identificación (cédula)
+          pattern: '^\d{10}$'
+          minLength: 10
+          maxLength: 10
+          example: "0705463420"
+        address:
+          type: string
+          description: Dirección de residencia
+          minLength: 5
+          maxLength: 200
+          example: "Avenida Paez y 8va C Norte"
+        phone:
+          type: string
+          description: Número de teléfono
+          pattern: '^(\+593|0)[0-9]{9}$'
+          example: "0963739435"
+        password:
+          type: string
+          description: |
+            Contraseña del cliente
+            - Mínimo 8 caracteres
+            - Al menos una mayúscula
+            - Al menos una minúscula
+            - Al menos un número
+          format: password
+          minLength: 8
+          maxLength: 100
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$'
+          example: "SecureP@ss123"
+        state:
+          type: boolean
+          description: Estado del cliente (activo/inactivo)
+          default: true
+
+    CustomerUpdateRequest:
+      type: object
+      required:
+        - name
+        - gender
+        - age
+        - address
+        - phone
+        - state
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          pattern: '^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$'
+          example: "Emilio Piedra"
+        gender:
+          type: string
+          enum: [M, F, O]
+          example: "M"
+        age:
+          type: integer
+          minimum: 18
+          maximum: 120
+          example: 36
+        address:
+          type: string
+          minLength: 5
+          maxLength: 200
+          example: "Nueva dirección 123"
+        phone:
+          type: string
+          pattern: '^(\+593|0)[0-9]{9}$'
+          example: "0963739435"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 100
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$'
+          description: Nueva contraseña (opcional)
+        state:
+          type: boolean
+          example: true
+
+    CustomerPatchRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+        gender:
+          type: string
+          enum: [M, F, O]
+        age:
+          type: integer
+          minimum: 18
+          maximum: 120
+        address:
+          type: string
+          minLength: 5
+          maxLength: 200
+        phone:
+          type: string
+          pattern: '^(\+593|0)[0-9]{9}$'
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 100
+        state:
+          type: boolean
+
+    CustomerResponse:
+      type: object
+      properties:
+        customerId:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          example: "Emilio Piedra"
+        gender:
+          type: string
+          enum: [M, F, O]
+          example: "M"
+        age:
+          type: integer
+          example: 35
+        identification:
+          type: string
+          example: "0705463420"
+        address:
+          type: string
+          example: "Avenida Paez y 8va C Norte"
+        phone:
+          type: string
+          example: "0963739435"
+        state:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: |
+            Token JWT generado para el cliente.
+            Solo se incluye en respuestas de creación (POST).
+            Usar este token en el header Authorization para futuras peticiones.
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJuYW1lIjoiSm9zZSBMZW1hIiwiaWF0IjoxNzMxMDAwMDAwLCJleHAiOjE3MzEwODY0MDB9.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-06T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-11-06T10:30:00.000Z"
+
+    CustomerPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerResponse'
+        page:
+          $ref: '#/components/schemas/PageMetadata'
+
+    PageMetadata:
+      type: object
+      properties:
+        size:
+          type: integer
+          description: Tamaño de la página
+          example: 20
+        number:
+          type: integer
+          description: Número de página actual (0-indexed)
+          example: 0
+        totalElements:
+          type: integer
+          description: Total de elementos
+          example: 100
+        totalPages:
+          type: integer
+          description: Total de páginas
+          example: 5
+
+    CustomerValidationResponse:
+      type: object
+      properties:
+        customerId:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          example: "Emilio Piedra"
+        identification:
+          type: string
+          example: "0705463420"
+        state:
+          type: boolean
+          example: true
+        valid:
+          type: boolean
+          description: Indica si el cliente es válido para operaciones
+          example: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp del error
+          example: "2025-11-06T10:30:00.000Z"
+        status:
+          type: integer
+          description: Código HTTP del error
+          example: 400
+        error:
+          type: string
+          description: Tipo de error
+          example: "Bad Request"
+        message:
+          type: string
+          description: Mensaje descriptivo del error
+          example: "Validation failed for field 'identification'"
+        path:
+          type: string
+          description: Path del endpoint que generó el error
+          example: "/api/v1/customers"
+        traceId:
+          $ref: '#/components/schemas/UUID'
+        errors:
+          type: array
+          description: Listado de errores de validación
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+    ValidationError:
+      type: object
+      properties:
+        field:
+          type: string
+          description: Campo que falló la validación
+          example: "identification"
+        message:
+          type: string
+          description: Mensaje de error de validación
+          example: "must match pattern ^d{10}$"
+        rejectedValue:
+          description: Valor rechazado
+          example: "123"
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN, DEGRADED]
+          example: "UP"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-11-06T10:30:00.000Z"
+        components:
+          type: object
+          properties:
+            database:
+              $ref: '#/components/schemas/ComponentHealth'
+            kafka:
+              $ref: '#/components/schemas/ComponentHealth'
+
+    ComponentHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN]
+          example: "UP"
+        details:
+          type: object
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Petición incorrecta - Error de validación
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            ValidationError:
+              value:
+                timestamp: "2025-11-06T10:30:00.000Z"
+                status: 400
+                error: "Bad Request"
+                message: "Validation failed"
+                path: "/api/v1/customers"
+                traceId: "550e8400-e29b-41d4-a716-446655440000"
+                errors:
+                  - field: "identification"
+                    message: "must match pattern ^\\d{10}$"
+                    rejectedValue: "123"
+
+    Unauthorized:
+      description: No autorizado - Token inválido o expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Prohibido - Sin permisos suficientes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            CustomerNotFound:
+              value:
+                timestamp: "2025-11-06T10:30:00.000Z"
+                status: 404
+                error: "Not Found"
+                message: "Customer with id 550e8400-e29b-41d4-a716-446655440000 not found"
+                path: "/api/v1/customers/550e8400-e29b-41d4-a716-446655440000"
+                traceId: "550e8400-e29b-41d4-a716-446655440000"
+
+    UnprocessableEntity:
+      description: Entidad no procesable - Error de lógica de negocio
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ServiceUnavailable:
+      description: Servicio no disponible
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  examples:
+    CreateCustomerExample:
+      value:
+        name: "Emilio Piedra"
+        gender: "M"
+        age: 27
+        identification: "0705463420"
+        address: "Avenida Paez y 8va C Norte"
+        phone: "0963739435"
+        password: "SecureP@ss123"
+        state: true
+
+    UpdateCustomerExample:
+      value:
+        name: "Emilio Piedra"
+        gender: "M"
+        age: 36
+        address: "Nueva dirección 123"
+        phone: "0963739435"
+        state: true
+
+    CustomerResponseExample:
+      value:
+        customerId: "550e8400-e29b-41d4-a716-446655440000"
+        name: "Emilio Piedra"
+        gender: "M"
+        age: 27
+        identification: "0705463420"
+        address: "Avenida Paez y 8va C Norte"
+        phone: "0963739435"
+        state: true
+        token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJuYW1lIjoiSm9zZSBMZW1hIiwiaWF0IjoxNzMxMDAwMDAwLCJleHAiOjE3MzEwODY0MDB9.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+        createdAt: "2025-11-06T10:30:00.000Z"
+        updatedAt: "2025-11-06T10:30:00.000Z"
+
+    CustomersPageExample:
+      value:
+        content:
+          - customerId: "550e8400-e29b-41d4-a716-446655440000"
+            name: "Emilio Piedra"
+            gender: "M"
+            age: 27
+            identification: "0705463420"
+            address: "Avenida Paez y 8va C Norte"
+            phone: "0963739435"
+            state: true
+            createdAt: "2025-11-06T10:30:00.000Z"
+            updatedAt: "2025-11-06T10:30:00.000Z"
+          - customerId: "660e8400-e29b-41d4-a716-446655440001"
+            name: "Marianela Montalvo"
+            gender: "F"
+            age: 28
+            identification: "0705463421"
+            address: "Amazonas y NNUU"
+            phone: "0975489655"
+            state: true
+            createdAt: "2025-11-06T10:30:00.000Z"
+            updatedAt: "2025-11-06T10:30:00.000Z"
+        page:
+          size: 20
+          number: 0
+          totalElements: 2
+          totalPages: 1

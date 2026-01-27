@@ -1,0 +1,71 @@
+variables:
+  own:
+    config:
+      # Server Configuration
+      - name: "SERVER_PORT"
+        value: "8081"
+
+      # Database Configuration
+      - name: "DATABASE_URL"
+        value: "r2dbc:postgresql://localhost:5432/customer_db"
+
+      # Kafka Configuration
+      - name: "KAFKA_BOOTSTRAP_SERVERS"
+        value: "localhost:29092"
+      - name: "KAFKA_TOPIC_CUSTOMER_EVENTS"
+        value: "customer.events"
+
+      # Environment
+      - name: "ENVIRONMENT"
+        value: "development"
+
+      # Logging Levels
+      - name: "LOG_LEVEL"
+        value: "DEBUG"
+      - name: "R2DBC_LOG_LEVEL"
+        value: "DEBUG"
+      - name: "KAFKA_LOG_LEVEL"
+        value: "INFO"
+      - name: "SECURITY_LOG_LEVEL"
+        value: "DEBUG"
+      - name: "NETTY_LOG_LEVEL"
+        value: "INFO"
+
+      # Security Configuration
+      - name: "SECURITY_ENABLED"
+        value: "true"
+      - name: "CORS_ALLOWED_ORIGINS"
+        value: "http://localhost:3000,http://localhost:4200"
+
+      # Password Encoder
+      - name: "PASSWORD_ENCODER_STRENGTH"
+        value: "10"
+
+    secret:
+      # Database Credentials
+      - name: "DATABASE_USERNAME"
+        value: "customer_user"
+      - name: "DATABASE_PASSWORD"
+        value: "customer_pass"
+
+      # JWT Configuration
+      - name: "JWT_SECRET"
+        value: "espiedra-dev-jwt-secret-key-for-development-purposes-only"
+      - name: "JWT_EXPIRATION"
+        value: "86400000"
+      - name: "JWT_ISSUER"
+        value: "api-customer-service"
+      - name: "JWT_AUDIENCE"
+        value: "espiedra-microservices"
+
+      # Spring Security Basic Auth (for development)
+      - name: "SECURITY_USER"
+        value: "admin"
+      - name: "SECURITY_PASSWORD"
+        value: "admin"
+
+  common:
+    config:
+      - name: "ENVIRONMENT"
+        value: "development"
+    secret: {}
