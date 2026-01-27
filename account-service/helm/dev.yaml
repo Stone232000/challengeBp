@@ -1,0 +1,83 @@
+variables:
+  own:
+    config:
+      # Server Configuration
+      - name: "SERVER_PORT"
+        value: "8082"
+
+      # Database Configuration
+      - name: "DATABASE_URL"
+        value: "r2dbc:postgresql://localhost:5433/account_db"
+
+      # Kafka Configuration
+      - name: "KAFKA_BOOTSTRAP_SERVERS"
+        value: "localhost:29092"
+      - name: "KAFKA_CONSUMER_GROUP_ID"
+        value: "account-service-group"
+      - name: "KAFKA_TOPIC_CUSTOMER_EVENTS"
+        value: "banking.customer.events"
+      - name: "KAFKA_TOPIC_ACCOUNT_EVENTS"
+        value: "banking.account.events"
+      - name: "KAFKA_TOPIC_MOVEMENT_EVENTS"
+        value: "banking.movement.events"
+
+      # Customer Service Client Configuration
+      - name: "CUSTOMER_SERVICE_URL"
+        value: "http://localhost:8081"
+      - name: "CUSTOMER_SERVICE_TIMEOUT"
+        value: "2000"
+      - name: "CUSTOMER_SERVICE_RETRY_MAX"
+        value: "2"
+      - name: "CUSTOMER_SERVICE_RETRY_BACKOFF"
+        value: "500"
+
+      # Environment
+      - name: "ENVIRONMENT"
+        value: "development"
+
+      # Logging Levels
+      - name: "LOG_LEVEL"
+        value: "DEBUG"
+      - name: "R2DBC_LOG_LEVEL"
+        value: "DEBUG"
+      - name: "KAFKA_LOG_LEVEL"
+        value: "INFO"
+      - name: "SECURITY_LOG_LEVEL"
+        value: "INFO"
+      - name: "NETTY_LOG_LEVEL"
+        value: "INFO"
+
+      # Security Configuration
+      - name: "SECURITY_ENABLED"
+        value: "true"
+      - name: "CORS_ALLOWED_ORIGINS"
+        value: "http://localhost:3000,http://localhost:4200,http://localhost:8081"
+
+    secret:
+      # Database Credentials
+      - name: "DATABASE_USERNAME"
+        value: "account_user"
+      - name: "DATABASE_PASSWORD"
+        value: "account_pass"
+
+      # JWT Configuration
+      - name: "JWT_SECRET"
+        value: "espiedra-dev-jwt-secret-key-for-development-purposes-only"
+      - name: "JWT_EXPIRATION"
+        value: "86400000"
+      - name: "JWT_ISSUER"
+        value: "api-account-service"
+      - name: "JWT_AUDIENCE"
+        value: "espiedra-microservices"
+
+      # Spring Security Basic Auth (for development)
+      - name: "SECURITY_USER"
+        value: "admin"
+      - name: "SECURITY_PASSWORD"
+        value: "admin"
+
+  common:
+    config:
+      - name: "ENVIRONMENT"
+        value: "development"
+    secret: {}

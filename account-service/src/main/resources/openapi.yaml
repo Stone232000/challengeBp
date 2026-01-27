@@ -1,0 +1,1345 @@
+openapi: 3.0.3
+info:
+  title: Account Service API
+  description: |
+    **Microservicio de Gestión de Cuentas y Movimientos**
+
+    Este microservicio maneja toda la lógica transaccional:
+    - Gestión de cuentas bancarias (CRUD completo)
+    - Registro y procesamiento de movimientos (débitos/créditos)
+    - Control de saldos y validaciones transaccionales
+    - Generación de reportes de estado de cuenta
+    - Procesamiento de eventos asíncronos desde Customer Service
+
+    **Arquitectura:**
+    - Spring Boot + WebFlux (Reactivo)
+    - Arquitectura Hexagonal (Ports & Adapters)
+    - Event-Driven Architecture
+    - Contract-First approach
+    - Circuit Breaker para resiliencia
+    - Cache distribuido para optimización
+
+    **Consideraciones de rendimiento:**
+    - Transacciones ACID garantizadas
+    - Optimistic locking para concurrencia
+    - Rate limiting para protección
+    - Monitoreo de métricas transaccionales
+
+    ---
+  contact:
+    name: Emilio Piedra
+    email: emiliopiedra2000@gmail.com
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8082/api/v1
+    description: Local Development
+  - url: https://dev-account-api.com/api/v1
+    description: Development Environment
+  - url: https://account-api.com/api/v1
+    description: Production Environment
+
+tags:
+  - name: Accounts
+    description: Operaciones CRUD sobre cuentas bancarias
+  - name: Movements
+    description: Operaciones de movimientos transaccionales
+  - name: Reports
+    description: Generación de reportes y estados de cuenta
+  - name: Health
+    description: Endpoints de health check y monitoreo
+
+security:
+  - Authorization: []
+
+paths:
+  /accounts:
+    get:
+      tags:
+        - Accounts
+      summary: Obtiene listado paginado de cuentas
+      description: |
+        Retorna una lista paginada de cuentas bancarias.
+        Soporta filtrado por cliente, tipo y estado.
+      operationId: getAccounts
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - $ref: '#/components/parameters/SortParam'
+        - name: customerId
+          in: query
+          description: Filtrar por ID de cliente
+          required: false
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: accountType
+          in: query
+          description: Filtrar por tipo de cuenta
+          required: false
+          schema:
+            $ref: '#/components/schemas/AccountType'
+        - name: state
+          in: query
+          description: Filtrar por estado activo/inactivo
+          required: false
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '200':
+          description: Listado de cuentas recuperado exitosamente
+          headers:
+            X-Total-Count:
+              description: Total de registros disponibles
+              schema:
+                type: integer
+            X-Page-Number:
+              description: Número de página actual
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountPageResponse'
+              examples:
+                SuccessfulResponse:
+                  $ref: '#/components/examples/AccountsPageExample'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Accounts
+      summary: Crea una nueva cuenta bancaria
+      description: |
+        Crea una nueva cuenta bancaria asociada a un cliente.
+
+        **Validaciones de negocio:**
+        - El cliente debe existir y estar activo (validación asíncrona)
+        - El número de cuenta debe ser único
+        - El saldo inicial no puede ser negativo
+        - Máximo 5 cuentas activas por cliente
+      operationId: createAccount
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        description: Datos de la cuenta a crear
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountCreateRequest'
+            examples:
+              SavingsAccount:
+                $ref: '#/components/examples/CreateSavingsAccountExample'
+              CheckingAccount:
+                $ref: '#/components/examples/CreateCheckingAccountExample'
+      responses:
+        '201':
+          description: Cuenta creada exitosamente
+          headers:
+            Location:
+              description: URI del recurso creado
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflicto - Número de cuenta duplicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /accounts/{accountNumber}:
+    get:
+      tags:
+        - Accounts
+      summary: Obtiene una cuenta por número
+      description: Retorna los datos completos de una cuenta específica
+      operationId: getAccountByNumber
+      parameters:
+        - $ref: '#/components/parameters/AccountNumberParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '200':
+          description: Cuenta encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    patch:
+      tags:
+        - Accounts
+      summary: Actualiza el estado de una cuenta
+      description: |
+        Permite cambiar el estado activo/inactivo de una cuenta.
+
+        **Validaciones:**
+        - No se puede desactivar una cuenta con saldo positivo
+        - No se puede activar una cuenta si el cliente está inactivo
+      operationId: patchAccountState
+      parameters:
+        - $ref: '#/components/parameters/AccountNumberParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountStatePatchRequest'
+      responses:
+        '200':
+          description: Estado actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Accounts
+      summary: Elimina una cuenta (soft delete)
+      description: |
+        Realiza una eliminación lógica de la cuenta.
+
+        **Validaciones:**
+        - La cuenta debe tener saldo cero
+        - No debe tener movimientos pendientes
+      operationId: deleteAccount
+      parameters:
+        - $ref: '#/components/parameters/AccountNumberParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '204':
+          description: Cuenta eliminada exitosamente
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflicto - Cuenta con saldo o movimientos pendientes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /accounts/{accountNumber}/balance:
+    get:
+      tags:
+        - Accounts
+      summary: Consulta el saldo actual de una cuenta
+      description: |
+        Retorna el saldo disponible actualizado de la cuenta.
+        Endpoint optimizado para consultas frecuentes (con cache).
+      operationId: getAccountBalance
+      parameters:
+        - $ref: '#/components/parameters/AccountNumberParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '200':
+          description: Saldo recuperado exitosamente
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Directivas de cache
+              example: "max-age=60"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /movements:
+    get:
+      tags:
+        - Movements
+      summary: Obtiene listado paginado de movimientos
+      description: |
+        Retorna una lista paginada de movimientos.
+        Permite filtrar por cuenta, rango de fechas y tipo.
+      operationId: getMovements
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+        - $ref: '#/components/parameters/SortParam'
+        - name: accountNumber
+          in: query
+          description: Filtrar por número de cuenta
+          required: false
+          schema:
+            $ref: '#/components/schemas/AccountNumber'
+        - name: movementType
+          in: query
+          description: Filtrar por tipo de movimiento
+          required: false
+          schema:
+            $ref: '#/components/schemas/MovementType'
+        - name: startDate
+          in: query
+          description: Fecha inicial (formato ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          description: Fecha final (formato ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '200':
+          description: Listado de movimientos recuperado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovementPageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      tags:
+        - Movements
+      summary: Registra un nuevo movimiento transaccional
+      description: |
+        Crea un nuevo movimiento (débito o crédito) en una cuenta.
+
+        **Reglas de negocio:**
+        - El valor debe ser mayor que cero
+        - Débito: se resta del saldo disponible
+        - Crédito: se suma al saldo disponible
+        - Validación de saldo suficiente para débitos
+        - Registro atómico y transaccional
+        - Generación de ID de transacción único
+
+        **Control de concurrencia:**
+        - Implementa optimistic locking
+        - Manejo de retry en caso de conflicto
+      operationId: createMovement
+      parameters:
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        description: Datos del movimiento a registrar
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovementCreateRequest'
+            examples:
+              CreditMovement:
+                $ref: '#/components/examples/CreateCreditMovementExample'
+              DebitMovement:
+                $ref: '#/components/examples/CreateDebitMovementExample'
+      responses:
+        '201':
+          description: Movimiento registrado exitosamente
+          headers:
+            Location:
+              description: URI del recurso creado
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovementResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Cuenta no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflicto de concurrencia o idempotencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Saldo no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                InsufficientBalance:
+                  value:
+                    timestamp: "2025-11-06T10:30:00.000Z"
+                    status: 422
+                    error: "Unprocessable Entity"
+                    message: "Saldo no disponible"
+                    path: "/api/v1/movements"
+                    traceId: "550e8400-e29b-41d4-a716-446655440000"
+                    errors:
+                      - field: "amount"
+                        message: "Insufficient balance for debit transaction"
+                        rejectedValue: 1000
+                        additionalInfo:
+                          currentBalance: 500
+                          requestedAmount: 1000
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /movements/{movementId}:
+    get:
+      tags:
+        - Movements
+      summary: Obtiene un movimiento por ID
+      description: Retorna los datos completos de un movimiento específico
+      operationId: getMovementById
+      parameters:
+        - $ref: '#/components/parameters/MovementIdParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '200':
+          description: Movimiento encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovementResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /movements/{movementId}/reverse:
+    post:
+      tags:
+        - Movements
+      summary: Reversa un movimiento
+      description: |
+        Crea un movimiento de reversa para anular una transacción previa.
+
+        **Validaciones:**
+        - El movimiento original debe existir
+        - No puede haberse reversado previamente
+        - Tiempo máximo para reversa: 24 horas
+      operationId: reverseMovement
+      parameters:
+        - $ref: '#/components/parameters/MovementIdParam'
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovementReverseRequest'
+      responses:
+        '201':
+          description: Reversa registrada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovementResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /reports/account-statement/{customerId}:
+    get:
+      tags:
+        - Reports
+      summary: Genera reporte de estado de cuenta
+      description: |
+        Genera un reporte completo de estado de cuenta para un cliente en formato JSON.
+
+        **Contenido del reporte:**
+        - Información del cliente
+        - Lista de cuentas con saldos actuales
+        - Detalle de movimientos en rango de fechas
+        - Saldos iniciales y finales
+        - Resumen de créditos y débitos
+      operationId: getAccountStatementReport
+      parameters:
+        - name: customerId
+          in: path
+          description: ID del cliente
+          required: true
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: startDate
+          in: query
+          description: Fecha inicial del reporte (ISO 8601)
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: endDate
+          in: query
+          description: Fecha final del reporte (ISO 8601)
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-12-31"
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '200':
+          description: Reporte generado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountStatementResponse'
+              examples:
+                AccountStatement:
+                  $ref: '#/components/examples/AccountStatementExample'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Cliente no encontrado o sin cuentas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Rango de fechas inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /reports/movements-summary:
+    get:
+      tags:
+        - Reports
+      summary: Genera resumen de movimientos
+      description: |
+        Genera un resumen estadístico de movimientos por período.
+        Útil para dashboards y análisis.
+      operationId: getMovementsSummary
+      parameters:
+        - name: accountNumber
+          in: query
+          description: Número de cuenta (opcional)
+          required: false
+          schema:
+            $ref: '#/components/schemas/AccountNumber'
+        - name: customerId
+          in: query
+          description: ID del cliente (opcional)
+          required: false
+          schema:
+            $ref: '#/components/schemas/UUID'
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/XRequestId'
+        - $ref: '#/components/parameters/XCorrelationId'
+      responses:
+        '200':
+          description: Resumen generado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovementsSummaryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check del servicio
+      description: Retorna el estado del servicio y sus dependencias
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: Servicio saludable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Servicio degradado o no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+components:
+  securitySchemes:
+    Authorization:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT en el header Authorization.
+        Formato: Authorization: Bearer {token}
+
+  parameters:
+    AccountNumberParam:
+      name: accountNumber
+      in: path
+      description: Número de cuenta bancaria
+      required: true
+      schema:
+        $ref: '#/components/schemas/AccountNumber'
+
+    MovementIdParam:
+      name: movementId
+      in: path
+      description: Identificador único del movimiento (UUID)
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+
+    PageParam:
+      name: page
+      in: query
+      description: Número de página (0-indexed)
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    SizeParam:
+      name: size
+      in: query
+      description: Tamaño de página
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    SortParam:
+      name: sort
+      in: query
+      description: Campo de ordenamiento
+      required: false
+      schema:
+        type: string
+        default: "createdAt,desc"
+
+    XRequestId:
+      name: X-Request-Id
+      in: header
+      description: ID único de la petición para trazabilidad
+      required: true
+      schema:
+        $ref: '#/components/schemas/UUID'
+
+    XCorrelationId:
+      name: X-Correlation-Id
+      in: header
+      description: ID de correlación para trazar operaciones entre servicios
+      required: false
+      schema:
+        $ref: '#/components/schemas/UUID'
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: Clave de idempotencia para operaciones críticas
+      required: false
+      schema:
+        $ref: '#/components/schemas/UUID'
+
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+      pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+      minLength: 36
+      maxLength: 36
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+    AccountNumber:
+      type: integer
+      format: int64
+      description: Número único de cuenta bancaria
+      minimum: 100000
+      maximum: 9999999999
+      example: 478758
+
+    AccountType:
+      type: string
+      description: Tipo de cuenta bancaria
+      enum:
+        - AHORRO
+        - CORRIENTE
+      example: "AHORRO"
+
+    MovementType:
+      type: string
+      description: Tipo de movimiento
+      enum:
+        - DEBITO
+        - CREDITO
+        - REVERSA
+      example: "CREDITO"
+
+    Money:
+      type: number
+      format: double
+      description: Valor monetario (siempre positivo para transacciones)
+      minimum: 0
+      multipleOf: 0.01
+      example: 1500.50
+
+    AccountCreateRequest:
+      type: object
+      required:
+        - accountType
+        - initialBalance
+        - customerId
+      properties:
+        accountNumber:
+          $ref: '#/components/schemas/AccountNumber'
+          description: Número de cuenta (opcional, se autogenera si no se provee)
+        accountType:
+          $ref: '#/components/schemas/AccountType'
+        initialBalance:
+          $ref: '#/components/schemas/Money'
+          description: Saldo inicial de la cuenta
+        customerId:
+          $ref: '#/components/schemas/UUID'
+          description: ID del cliente propietario
+        state:
+          type: boolean
+          description: Estado inicial de la cuenta
+          default: true
+
+    AccountStatePatchRequest:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          type: boolean
+          description: Nuevo estado de la cuenta
+        reason:
+          type: string
+          description: Razón del cambio de estado
+          minLength: 5
+          maxLength: 200
+          example: "Solicitud del cliente"
+
+    AccountResponse:
+      type: object
+      properties:
+        accountNumber:
+          $ref: '#/components/schemas/AccountNumber'
+        accountType:
+          $ref: '#/components/schemas/AccountType'
+        balance:
+          $ref: '#/components/schemas/Money'
+        state:
+          type: boolean
+          example: true
+        customerId:
+          $ref: '#/components/schemas/UUID'
+        customerName:
+          type: string
+          description: Nombre del cliente (desnormalizado para performance)
+          example: "Jose Lema"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-06T10:30:00.000Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-11-06T10:30:00.000Z"
+
+    AccountPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountResponse'
+        page:
+          $ref: '#/components/schemas/PageMetadata'
+
+    BalanceResponse:
+      type: object
+      properties:
+        accountNumber:
+          $ref: '#/components/schemas/AccountNumber'
+        balance:
+          $ref: '#/components/schemas/Money'
+        availableBalance:
+          $ref: '#/components/schemas/Money'
+          description: Saldo disponible (considerando retenciones)
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp de la consulta
+          example: "2025-11-06T10:30:00.000Z"
+
+    MovementCreateRequest:
+      type: object
+      required:
+        - accountNumber
+        - movementType
+        - amount
+      properties:
+        accountNumber:
+          $ref: '#/components/schemas/AccountNumber'
+        movementType:
+          $ref: '#/components/schemas/MovementType'
+        amount:
+          $ref: '#/components/schemas/Money'
+          minimum: 0.01
+          description: Monto de la transacción (debe ser mayor que cero)
+        description:
+          type: string
+          description: Descripción del movimiento
+          minLength: 3
+          maxLength: 200
+          example: "Depósito en efectivo"
+        reference:
+          type: string
+          description: Referencia externa de la transacción
+          maxLength: 100
+          example: "REF-2025-001"
+
+    MovementReverseRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          description: Motivo de la reversa
+          minLength: 10
+          maxLength: 500
+          example: "Error en el monto de la transacción"
+
+    MovementResponse:
+      type: object
+      properties:
+        movementId:
+          $ref: '#/components/schemas/UUID'
+        accountNumber:
+          $ref: '#/components/schemas/AccountNumber'
+        movementType:
+          $ref: '#/components/schemas/MovementType'
+        amount:
+          $ref: '#/components/schemas/Money'
+        balanceBefore:
+          $ref: '#/components/schemas/Money'
+          description: Saldo antes del movimiento
+        balanceAfter:
+          $ref: '#/components/schemas/Money'
+          description: Saldo después del movimiento
+        description:
+          type: string
+          example: "Depósito en efectivo"
+        reference:
+          type: string
+          example: "REF-2025-001"
+        transactionId:
+          type: string
+          description: ID único de transacción para trazabilidad
+          example: "TXN-20251106-123456-ABCD"
+        reversedMovementId:
+          $ref: '#/components/schemas/UUID'
+          description: ID del movimiento original (si es una reversa)
+        reversed:
+          type: boolean
+          description: Indica si este movimiento ha sido reversado
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-11-06T10:30:00.000Z"
+
+    MovementPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/MovementResponse'
+        page:
+          $ref: '#/components/schemas/PageMetadata'
+
+    AccountStatementResponse:
+      type: object
+      properties:
+        reportId:
+          $ref: '#/components/schemas/UUID'
+        generatedAt:
+          type: string
+          format: date-time
+          example: "2025-11-06T10:30:00.000Z"
+        customer:
+          $ref: '#/components/schemas/CustomerInfo'
+        period:
+          $ref: '#/components/schemas/ReportPeriod'
+        accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountStatement'
+        summary:
+          $ref: '#/components/schemas/StatementSummary'
+
+    CustomerInfo:
+      type: object
+      properties:
+        customerId:
+          $ref: '#/components/schemas/UUID'
+        name:
+          type: string
+          example: "Jose Lema"
+        identification:
+          type: string
+          example: "0705463420"
+
+    ReportPeriod:
+      type: object
+      properties:
+        startDate:
+          type: string
+          format: date
+          example: "2025-01-01"
+        endDate:
+          type: string
+          format: date
+          example: "2025-12-31"
+
+    AccountStatement:
+      type: object
+      properties:
+        accountNumber:
+          $ref: '#/components/schemas/AccountNumber'
+        accountType:
+          $ref: '#/components/schemas/AccountType'
+        state:
+          type: boolean
+        initialBalance:
+          $ref: '#/components/schemas/Money'
+          description: Saldo al inicio del período
+        finalBalance:
+          $ref: '#/components/schemas/Money'
+          description: Saldo al final del período
+        movements:
+          type: array
+          items:
+            $ref: '#/components/schemas/MovementDetail'
+
+    MovementDetail:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+          example: "2025-02-10T14:30:00.000Z"
+        movementType:
+          $ref: '#/components/schemas/MovementType'
+        description:
+          type: string
+          example: "Depósito en efectivo"
+        amount:
+          $ref: '#/components/schemas/Money'
+        balance:
+          $ref: '#/components/schemas/Money'
+          description: Saldo después del movimiento
+        transactionId:
+          type: string
+          example: "TXN-20251106-123456-ABCD"
+
+    StatementSummary:
+      type: object
+      properties:
+        totalAccounts:
+          type: integer
+          example: 3
+        totalCredits:
+          $ref: '#/components/schemas/Money'
+          description: Suma total de créditos
+        totalDebits:
+          $ref: '#/components/schemas/Money'
+          description: Suma total de débitos
+        totalMovements:
+          type: integer
+          description: Cantidad total de movimientos
+          example: 45
+        netChange:
+          type: number
+          description: Cambio neto en el período (créditos - débitos)
+          example: 5000.00
+
+    MovementsSummaryResponse:
+      type: object
+      properties:
+        period:
+          $ref: '#/components/schemas/ReportPeriod'
+        totalCredits:
+          $ref: '#/components/schemas/Money'
+        totalDebits:
+          $ref: '#/components/schemas/Money'
+        creditCount:
+          type: integer
+          example: 25
+        debitCount:
+          type: integer
+          example: 20
+        averageTransactionAmount:
+          $ref: '#/components/schemas/Money'
+        largestTransaction:
+          $ref: '#/components/schemas/Money'
+        smallestTransaction:
+          $ref: '#/components/schemas/Money'
+
+    PageMetadata:
+      type: object
+      properties:
+        size:
+          type: integer
+          example: 20
+        number:
+          type: integer
+          example: 0
+        totalElements:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 5
+
+    ErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-11-06T10:30:00.000Z"
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: "Bad Request"
+        message:
+          type: string
+          example: "Validation failed"
+        path:
+          type: string
+          example: "/api/v1/accounts"
+        traceId:
+          $ref: '#/components/schemas/UUID'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+    ValidationError:
+      type: object
+      properties:
+        field:
+          type: string
+          example: "amount"
+        message:
+          type: string
+          example: "must be greater than 0"
+        rejectedValue:
+          example: -100
+        additionalInfo:
+          type: object
+          additionalProperties: true
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN, DEGRADED]
+          example: "UP"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-11-06T10:30:00.000Z"
+        components:
+          type: object
+          properties:
+            database:
+              $ref: '#/components/schemas/ComponentHealth'
+            kafka:
+              $ref: '#/components/schemas/ComponentHealth'
+            customerServiceClient:
+              $ref: '#/components/schemas/ComponentHealth'
+            cache:
+              $ref: '#/components/schemas/ComponentHealth'
+
+    ComponentHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [UP, DOWN]
+          example: "UP"
+        details:
+          type: object
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Petición incorrecta - Error de validación
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: No autorizado - Token inválido o expirado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Prohibido - Sin permisos suficientes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    UnprocessableEntity:
+      description: Entidad no procesable - Error de lógica de negocio
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ServiceUnavailable:
+      description: Servicio no disponible o degradado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  examples:
+    CreateSavingsAccountExample:
+      value:
+        accountNumber: 478758
+        accountType: "AHORRO"
+        initialBalance: 2000.00
+        customerId: "550e8400-e29b-41d4-a716-446655440000"
+        state: true
+
+    CreateCheckingAccountExample:
+      value:
+        accountType: "CORRIENTE"
+        initialBalance: 1000.00
+        customerId: "550e8400-e29b-41d4-a716-446655440000"
+        state: true
+
+    AccountsPageExample:
+      value:
+        content:
+          - accountNumber: 478758
+            accountType: "AHORRO"
+            balance: 2000.00
+            state: true
+            customerId: "550e8400-e29b-41d4-a716-446655440000"
+            customerName: "Jose Lema"
+            createdAt: "2025-11-06T10:30:00.000Z"
+            updatedAt: "2025-11-06T10:30:00.000Z"
+          - accountNumber: 225487
+            accountType: "CORRIENTE"
+            balance: 700.00
+            state: true
+            customerId: "660e8400-e29b-41d4-a716-446655440001"
+            customerName: "Marianela Montalvo"
+            createdAt: "2025-11-06T10:30:00.000Z"
+            updatedAt: "2025-11-06T10:30:00.000Z"
+        page:
+          size: 20
+          number: 0
+          totalElements: 2
+          totalPages: 1
+
+    CreateCreditMovementExample:
+      value:
+        accountNumber: 478758
+        movementType: "CREDITO"
+        amount: 600.00
+        description: "Depósito en efectivo"
+        reference: "REF-2025-001"
+
+    CreateDebitMovementExample:
+      value:
+        accountNumber: 478758
+        movementType: "DEBITO"
+        amount: 575.00
+        description: "Retiro en cajero"
+        reference: "REF-2025-002"
+
+    AccountStatementExample:
+      value:
+        reportId: "770e8400-e29b-41d4-a716-446655440000"
+        generatedAt: "2025-11-06T10:30:00.000Z"
+        customer:
+          customerId: "660e8400-e29b-41d4-a716-446655440001"
+          name: "Marianela Montalvo"
+          identification: "0705463421"
+        period:
+          startDate: "2025-02-01"
+          endDate: "2025-02-28"
+        accounts:
+          - accountNumber: 225487
+            accountType: "CORRIENTE"
+            state: true
+            initialBalance: 100.00
+            finalBalance: 700.00
+            movements:
+              - date: "2025-02-10T14:30:00.000Z"
+                movementType: "CREDITO"
+                description: "Depósito en efectivo"
+                amount: 600.00
+                balance: 700.00
+                transactionId: "TXN-20250210-143000-ABCD"
+          - accountNumber: 496825
+            accountType: "AHORRO"
+            state: true
+            initialBalance: 540.00
+            finalBalance: 0.00
+            movements:
+              - date: "2025-02-08T10:15:00.000Z"
+                movementType: "DEBITO"
+                description: "Retiro en cajero"
+                amount: 540.00
+                balance: 0.00
+                transactionId: "TXN-20250208-101500-EFGH"
+        summary:
+          totalAccounts: 2
+          totalCredits: 600.00
+          totalDebits: 540.00
+          totalMovements: 2
+          netChange: 60.00

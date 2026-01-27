@@ -1,0 +1,265 @@
+# =====================================================
+# Account Service - STAGING Configuration
+# Technical Assessment - Senior Level
+# =====================================================
+
+spring:
+  application:
+    name: api-account-service
+
+  # =====================================================
+  # R2DBC PostgreSQL Configuration (Staging)
+  # =====================================================
+  r2dbc:
+    url: ${DATABASE_URL:r2dbc:postgresql://postgres-test:5432/bank_accounts_test}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    pool:
+      enabled: true
+      initial-size: 10
+      max-size: 50
+      max-idle-time: 30m
+      max-acquire-time: 4s
+      max-create-connection-time: 4s
+      validation-query: SELECT 1
+      validation-depth: LOCAL
+
+  # =====================================================
+  # Jackson Configuration (JSON)
+  # =====================================================
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    time-zone: UTC
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+
+  # =====================================================
+  # Security Configuration
+  # =====================================================
+  security:
+    user:
+      name: ${SECURITY_USER:staging_admin}
+      password: ${SECURITY_PASSWORD}
+
+  # =====================================================
+  # Kafka Configuration (Staging)
+  # =====================================================
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-test:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        linger.ms: 10
+        compression.type: snappy
+        batch.size: 16384
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:account-service-staging}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 250
+      topics:
+        customer-events: ${KAFKA_TOPIC_CUSTOMER_EVENTS:banking.customer.events}
+      properties:
+        spring.json.trusted.packages: "*"
+        session.timeout.ms: 20000
+        heartbeat.interval.ms: 7000
+    properties:
+      client.id: ${spring.application.name}-staging
+
+# =====================================================
+# Server Configuration (Staging)
+# =====================================================
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: on_param
+    include-exception: false
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 1024
+  http2:
+    enabled: true
+  shutdown: graceful
+
+# =====================================================
+# Management & Actuator Configuration (Staging)
+# =====================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,configprops
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: staging
+    export:
+      prometheus:
+        enabled: true
+        step: 30s
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 50ms,100ms,200ms,500ms,1s,2s
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+# =====================================================
+# Logging Configuration (Staging)
+# =====================================================
+logging:
+  level:
+    root: INFO
+    com.espiedra.api.account.service: INFO
+    org.springframework.r2dbc: INFO
+    org.springframework.kafka: INFO
+    org.springframework.security: INFO
+    reactor.netty: INFO
+    io.r2dbc.postgresql.QUERY: DEBUG
+    io.r2dbc.postgresql.PARAM: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId}] [%X{requestId}] [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/${spring.application.name}/${spring.application.name}.log
+    max-size: 25MB
+    max-history: 60
+    total-size-cap: 2GB
+
+# =====================================================
+# SpringDoc OpenAPI Configuration (Staging)
+# =====================================================
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    display-request-duration: true
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: false
+
+# =====================================================
+# Application Custom Properties (Staging)
+# =====================================================
+app:
+  # Customer Service Client Configuration
+  customer-service:
+    base-url: ${CUSTOMER_SERVICE_URL:http://api-customer-service:8080}
+    timeout: ${CUSTOMER_SERVICE_TIMEOUT:5000}
+    retry:
+      max-attempts: ${CUSTOMER_SERVICE_RETRY_MAX:2}
+      backoff-delay: ${CUSTOMER_SERVICE_RETRY_BACKOFF:500}
+
+  # JWT Configuration
+  jwt:
+    secret: ${JWT_SECRET:espiedra-staging-jwt-secret-key-for-testing-purposes}
+    expiration: ${JWT_EXPIRATION:86400000} # 24 hours
+    issuer: ${JWT_ISSUER:api-account-service}
+    audience: ${JWT_AUDIENCE:espiedra-microservices}
+
+  # Kafka Topics
+  kafka:
+    topics:
+      customer-events: ${KAFKA_TOPIC_CUSTOMER_EVENTS:banking.customer.events}
+      account-events: ${KAFKA_TOPIC_ACCOUNT_EVENTS:banking.account.events}
+      movement-events: ${KAFKA_TOPIC_MOVEMENT_EVENTS:banking.movement.events}
+    producer:
+      client-id: ${spring.application.name}-producer-staging
+    consumer:
+      client-id: ${spring.application.name}-consumer-staging
+
+  # Pagination Defaults
+  pagination:
+    default-page: 0
+    default-size: 20
+    max-size: 100
+
+  # API Configuration
+  api:
+    version: '@project.version@'
+    title: 'Account Service API - STAGING'
+    description: 'Microservicio de Gestión de Cuentas y Movimientos (Staging Environment)'
+    contact:
+      name: 'Emilio Piedra'
+      email: 'emiliopiedra2000@gmail.com'
+    base-path: /api/v1
+
+  # Correlation & Request Tracing
+  tracing:
+    correlation-id-header: X-Correlation-Id
+    request-id-header: X-Request-Id
+    enabled: true
+
+  # Database Configuration
+  database:
+    schema: public
+    connection-timeout: 4000
+    query-timeout: 8000
+
+  # Security (Staging)
+  security:
+    enabled: ${SECURITY_ENABLED:true}
+    public-endpoints:
+      - /actuator/health
+      - /actuator/info
+      - /api-docs/**
+      - /swagger-ui/**
+      - /swagger-ui.html
+      - /webjars/**
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200,https://staging.espiedra.com}
+      allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      allowed-headers: "*"
+      exposed-headers: X-Request-Id,X-Correlation-Id
+      allow-credentials: true
+      max-age: 3600
+
+  # Circuit Breaker Configuration (Staging)
+  resilience:
+    circuit-breaker:
+      enabled: true
+      failure-rate-threshold: 60
+      wait-duration-in-open-state: 30s
+      permitted-number-of-calls-in-half-open-state: 5
+      sliding-window-size: 50
+      minimum-number-of-calls: 10
+    retry:
+      max-attempts: 2
+      wait-duration: 500ms
+    timeout:
+      enabled: true
+      duration: 8s

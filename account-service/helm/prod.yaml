@@ -1,0 +1,95 @@
+variables:
+  own:
+    config:
+      # Server Configuration
+      - name: "SERVER_PORT"
+        value: "8080"
+
+      # Database Configuration
+      - name: "DATABASE_URL"
+        value: "r2dbc:postgresql://postgres-prod:5432/bank_accounts_prod"
+
+      # Kafka Configuration
+      - name: "KAFKA_BOOTSTRAP_SERVERS"
+        value: "kafka-prod:9092"
+      - name: "KAFKA_CONSUMER_GROUP_ID"
+        value: "account-service-prod"
+      - name: "KAFKA_TOPIC_CUSTOMER_EVENTS"
+        value: "banking.customer.events"
+      - name: "KAFKA_TOPIC_ACCOUNT_EVENTS"
+        value: "banking.account.events"
+      - name: "KAFKA_TOPIC_MOVEMENT_EVENTS"
+        value: "banking.movement.events"
+
+      # Customer Service Client Configuration
+      - name: "CUSTOMER_SERVICE_URL"
+        value: "http://api-customer-service:8080"
+      - name: "CUSTOMER_SERVICE_TIMEOUT"
+        value: "3000"
+      - name: "CUSTOMER_SERVICE_RETRY_MAX"
+        value: "3"
+      - name: "CUSTOMER_SERVICE_RETRY_BACKOFF"
+        value: "1000"
+
+      # Environment
+      - name: "ENVIRONMENT"
+        value: "production"
+
+      # Logging Levels (Production - reduced logging)
+      - name: "LOG_LEVEL"
+        value: "INFO"
+      - name: "R2DBC_LOG_LEVEL"
+        value: "WARN"
+      - name: "KAFKA_LOG_LEVEL"
+        value: "INFO"
+      - name: "SECURITY_LOG_LEVEL"
+        value: "WARN"
+      - name: "NETTY_LOG_LEVEL"
+        value: "WARN"
+
+      # Security Configuration
+      - name: "SECURITY_ENABLED"
+        value: "true"
+      - name: "CORS_ALLOWED_ORIGINS"
+        value: "https://app.espiedra.com,https://www.espiedra.com"
+
+      # R2DBC Pool Configuration (Production-optimized)
+      - name: "SPRING_R2DBC_POOL_INITIAL_SIZE"
+        value: "20"
+      - name: "SPRING_R2DBC_POOL_MAX_SIZE"
+        value: "100"
+      - name: "SPRING_R2DBC_POOL_MAX_IDLE_TIME"
+        value: "30m"
+
+      # JVM Options (Production)
+      - name: "JAVA_OPTS"
+        value: "-Xms1024m -Xmx1536m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError"
+
+    secret:
+      # Database Credentials (MUST be stored in Kubernetes Secrets)
+      - name: "DATABASE_USERNAME"
+        value: "REQUIRED_FROM_K8S_SECRET"
+      - name: "DATABASE_PASSWORD"
+        value: "REQUIRED_FROM_K8S_SECRET"
+
+      # JWT Configuration (MUST be stored in Kubernetes Secrets)
+      - name: "JWT_SECRET"
+        value: "REQUIRED_FROM_K8S_SECRET"
+      - name: "JWT_EXPIRATION"
+        value: "86400000"
+      - name: "JWT_ISSUER"
+        value: "api-account-service"
+      - name: "JWT_AUDIENCE"
+        value: "espiedra-microservices"
+
+      # Spring Security Basic Auth (MUST be stored in Kubernetes Secrets)
+      - name: "SECURITY_USER"
+        value: "REQUIRED_FROM_K8S_SECRET"
+      - name: "SECURITY_PASSWORD"
+        value: "REQUIRED_FROM_K8S_SECRET"
+
+  common:
+    config:
+      - name: "ENVIRONMENT"
+        value: "production"
+    secret: {}

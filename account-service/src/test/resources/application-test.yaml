@@ -1,0 +1,86 @@
+# =====================================================
+# Account Service - TEST Configuration
+# For Integration Tests
+# =====================================================
+
+spring:
+  application:
+    name: api-account-service-test
+
+  # =====================================================
+  # R2DBC H2 Configuration (In-Memory Database for Tests)
+  # =====================================================
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb?options=DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    username: sa
+    password:
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 10
+
+  # =====================================================
+  # H2 Console (for debugging tests)
+  # =====================================================
+  h2:
+    console:
+      enabled: false
+
+  # =====================================================
+  # SQL Initialization (Create tables for tests)
+  # =====================================================
+  sql:
+    init:
+      mode: always
+      platform: h2
+
+# =====================================================
+# Server Configuration
+# =====================================================
+server:
+  port: 0 # Random port for tests
+
+# =====================================================
+# Logging Configuration (minimal for tests)
+# =====================================================
+logging:
+  level:
+    root: WARN
+    com.espiedra.api.account.service: INFO
+    org.springframework.r2dbc: WARN
+    io.r2dbc.h2: WARN
+
+# =====================================================
+# Application Custom Properties (test values)
+# =====================================================
+app:
+  customer-service:
+    base-url: http://localhost:8081
+    timeout: 1000
+    retry:
+      max-attempts: 1
+      backoff-delay: 100
+
+  jwt:
+    secret: test-jwt-secret-key
+    expiration: 3600000
+    issuer: api-account-service-test
+    audience: test-audience
+
+  kafka:
+    topics:
+      customer-events: test.customer.events
+      account-events: test.account.events
+      movement-events: test.movement.events
+
+  business:
+    account:
+      max-accounts-per-customer: 5
+      min-initial-balance: 0
+      overdraft-limit: 10000
+    movement:
+      min-amount: 0.01
+      reversal-time-limit-hours: 24
+
+  security:
+    enabled: false # Disable security for tests

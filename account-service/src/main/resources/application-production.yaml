@@ -1,0 +1,258 @@
+# =====================================================
+# Account Service - PRODUCTION Configuration
+# Technical Assessment - Senior Level
+# =====================================================
+
+spring:
+  application:
+    name: api-account-service
+
+  # =====================================================
+  # R2DBC PostgreSQL Configuration (Production)
+  # =====================================================
+  r2dbc:
+    url: ${DATABASE_URL:r2dbc:postgresql://postgres-prod:5432/bank_accounts_prod}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    pool:
+      enabled: true
+      initial-size: 20
+      max-size: 100
+      max-idle-time: 30m
+      max-acquire-time: 5s
+      max-create-connection-time: 5s
+      validation-query: SELECT 1
+      validation-depth: LOCAL
+
+  # =====================================================
+  # Jackson Configuration (JSON)
+  # =====================================================
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      indent-output: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    time-zone: UTC
+    date-format: yyyy-MM-dd'T'HH:mm:ss.SSSXXX
+
+  # =====================================================
+  # Security Configuration
+  # =====================================================
+  security:
+    user:
+      name: ${SECURITY_USER}
+      password: ${SECURITY_PASSWORD}
+
+  # =====================================================
+  # Kafka Configuration (Production)
+  # =====================================================
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-prod:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 5
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        linger.ms: 10
+        compression.type: snappy
+        batch.size: 32768
+        buffer.memory: 67108864
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:account-service-prod}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 500
+      topics:
+        customer-events: ${KAFKA_TOPIC_CUSTOMER_EVENTS:banking.customer.events}
+      properties:
+        spring.json.trusted.packages: "*"
+        session.timeout.ms: 30000
+        heartbeat.interval.ms: 10000
+    properties:
+      client.id: ${spring.application.name}-prod
+
+# =====================================================
+# Server Configuration (Production)
+# =====================================================
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 2048
+  http2:
+    enabled: true
+  shutdown: graceful
+
+# =====================================================
+# Management & Actuator Configuration (Production)
+# =====================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: production
+    export:
+      prometheus:
+        enabled: true
+        step: 1m
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 50ms,100ms,200ms,500ms,1s
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+# =====================================================
+# Logging Configuration (Production)
+# =====================================================
+logging:
+  level:
+    root: WARN
+    com.espiedra.api.account.service: INFO
+    org.springframework.r2dbc: WARN
+    org.springframework.kafka: INFO
+    org.springframework.security: WARN
+    reactor.netty: WARN
+    io.r2dbc.postgresql.QUERY: ERROR
+    io.r2dbc.postgresql.PARAM: ERROR
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId}] [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId}] [%X{requestId}] [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/${spring.application.name}/${spring.application.name}.log
+    max-size: 50MB
+    max-history: 90
+    total-size-cap: 5GB
+
+# =====================================================
+# SpringDoc OpenAPI Configuration (Production)
+# =====================================================
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: false  # Disabled in production for security
+  swagger-ui:
+    enabled: false  # Disabled in production
+  show-actuator: false
+
+# =====================================================
+# Application Custom Properties (Production)
+# =====================================================
+app:
+  # Customer Service Client Configuration
+  customer-service:
+    base-url: ${CUSTOMER_SERVICE_URL:http://api-customer-service:8080}
+    timeout: ${CUSTOMER_SERVICE_TIMEOUT:3000}
+    retry:
+      max-attempts: ${CUSTOMER_SERVICE_RETRY_MAX:3}
+      backoff-delay: ${CUSTOMER_SERVICE_RETRY_BACKOFF:1000}
+
+  # JWT Configuration
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000} # 24 hours
+    issuer: ${JWT_ISSUER:api-account-service}
+    audience: ${JWT_AUDIENCE:espiedra-microservices}
+
+  # Kafka Topics
+  kafka:
+    topics:
+      customer-events: ${KAFKA_TOPIC_CUSTOMER_EVENTS:banking.customer.events}
+      account-events: ${KAFKA_TOPIC_ACCOUNT_EVENTS:banking.account.events}
+      movement-events: ${KAFKA_TOPIC_MOVEMENT_EVENTS:banking.movement.events}
+    producer:
+      client-id: ${spring.application.name}-producer-prod
+    consumer:
+      client-id: ${spring.application.name}-consumer-prod
+
+  # Pagination Defaults
+  pagination:
+    default-page: 0
+    default-size: 20
+    max-size: 100
+
+  # API Configuration
+  api:
+    version: '@project.version@'
+    title: 'Account Service API'
+    description: 'Microservicio de Gestión de Cuentas y Movimientos'
+    contact:
+      name: 'Emilio Piedra'
+      email: 'emiliopiedra2000@gmail.com'
+    base-path: /api/v1
+
+  # Correlation & Request Tracing
+  tracing:
+    correlation-id-header: X-Correlation-Id
+    request-id-header: X-Request-Id
+    enabled: true
+
+  # Database Configuration
+  database:
+    schema: public
+    connection-timeout: 5000
+    query-timeout: 10000
+
+  # Security (Production)
+  security:
+    enabled: ${SECURITY_ENABLED:true}
+    public-endpoints:
+      - /actuator/health
+      - /actuator/info
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS}
+      allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+      allowed-headers: Authorization,Content-Type,X-Request-Id,X-Correlation-Id
+      exposed-headers: X-Request-Id,X-Correlation-Id
+      allow-credentials: true
+      max-age: 3600
+
+  # Circuit Breaker Configuration (Production)
+  resilience:
+    circuit-breaker:
+      enabled: true
+      failure-rate-threshold: 50
+      wait-duration-in-open-state: 60s
+      permitted-number-of-calls-in-half-open-state: 10
+      sliding-window-size: 100
+      minimum-number-of-calls: 20
+    retry:
+      max-attempts: 3
+      wait-duration: 1s
+    timeout:
+      enabled: true
+      duration: 5s
