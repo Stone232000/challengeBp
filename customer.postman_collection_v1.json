@@ -1,0 +1,367 @@
+{
+	"info": {
+		"_postman_id": "7c86c34b-2f07-4cd2-a18d-1b454902ac00",
+		"name": "customer",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "20226346"
+	},
+	"item": [
+		{
+			"name": "customers",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwic3ViIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2Mjg0Mjg1MywiZXhwIjoxNzYyOTI5MjUzfQ.XmtvMKLm32u7lp88cavZg2F_FHAxAhnbIlmetrCNskelcxBZrvpJv4VJl8HUY69f",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8081/api/v1/customers?page=0&size=20&sort=createdAt%2Cdesc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"customers"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "20"
+						},
+						{
+							"key": "sort",
+							"value": "createdAt%2Cdesc"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "customers",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Darwin Pilaloa Ruiz\",\n  \"gender\": \"M\",\n  \"age\": 51,\n  \"identification\": \"0702818717\",\n  \"address\": \"Avenida Paez y 8va C Norte\",\n  \"phone\": \"0963739435\",\n  \"password\": \"SecureP@ss123\",\n  \"state\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/v1/customers",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"customers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getCustomerById",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiYWZlNDk1NTktNGE0OC00N2UyLWFmYWEtYzlmZmE3ZDU0YTQ5Iiwic3ViIjoiYWZlNDk1NTktNGE0OC00N2UyLWFmYWEtYzlmZmE3ZDU0YTQ5IiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2MjcxODA2MSwiZXhwIjoxNzYyODA0NDYxfQ.imOIllF5_02zY7rCmZA6ZG5bzNTdq0fheKEaWjn7nWgNvcJDOcXiC4Gmvz9woC3s",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440001"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8081/api/v1/customers/73b4f9c0-7b98-4e78-aafb-945ed814b20c",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"customers",
+						"73b4f9c0-7b98-4e78-aafb-945ed814b20c"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "putCustomerById",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDI4MTg3MTciLCJjdXN0b21lcklkIjoiZmMyYzQ1YTctNzViMi00MGRiLTkzNzMtMDI4MzNjNTQ3OTc0Iiwic3ViIjoiZmMyYzQ1YTctNzViMi00MGRiLTkzNzMtMDI4MzNjNTQ3OTc0IiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2Mjg0MzU5OSwiZXhwIjoxNzYyOTI5OTk5fQ.lyulV-kA4TKZS-LuAyttfmzr3qvFitv9wHXs8raJJWkxfpBp61OGXOEsBDa7mexA",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"Darwin Pilaloa\",\n  \"gender\": \"M\",\n  \"age\": 45,\n  \"address\": \"Paez y 8va C Norte New\",\n  \"phone\": \"0992951029\",\n  \"state\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/v1/customers/fc2c45a7-75b2-40db-9373-02833c547974",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"customers",
+						"fc2c45a7-75b2-40db-9373-02833c547974"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "patchCustomerById",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiYWZlNDk1NTktNGE0OC00N2UyLWFmYWEtYzlmZmE3ZDU0YTQ5Iiwic3ViIjoiYWZlNDk1NTktNGE0OC00N2UyLWFmYWEtYzlmZmE3ZDU0YTQ5IiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2MjcxODA2MSwiZXhwIjoxNzYyODA0NDYxfQ.imOIllF5_02zY7rCmZA6ZG5bzNTdq0fheKEaWjn7nWgNvcJDOcXiC4Gmvz9woC3s",
+							"type": "string"
+						}
+					]
+				},
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"state\": false\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/v1/customers/afe49559-4a48-47e2-afaa-c9ffa7d54a49",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"customers",
+						"afe49559-4a48-47e2-afaa-c9ffa7d54a49"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "validateCustomer",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDM1OTkxMjYiLCJjdXN0b21lcklkIjoiZTVmYWNmYzAtNjQyMC00MjJkLTgxZjMtNzRmMjU2ZWFiZWIxIiwic3ViIjoiZTVmYWNmYzAtNjQyMC00MjJkLTgxZjMtNzRmMjU2ZWFiZWIxIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2MjgxNjAzMCwiZXhwIjoxNzYyOTAyNDMwfQ.3MHcTKnBqGaA5ToeMjAAOkiKOWruN6o_FNTKoigx7dodma5lWUAxJU502aKOQ3b4",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8081/api/v1/customers/e5facfc0-6420-422d-81f3-74f256eabeb1/validate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"customers",
+						"e5facfc0-6420-422d-81f3-74f256eabeb1",
+						"validate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "delCustomer",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiODBjNDAxOGUtZDc4YS00YTY2LWFhM2UtYWE5MzJkOTJlZjhhIiwic3ViIjoiODBjNDAxOGUtZDc4YS00YTY2LWFhM2UtYWE5MzJkOTJlZjhhIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2MjgwNzE1MiwiZXhwIjoxNzYyODkzNTUyfQ._URCYb_LUrKAIZGwuYdWao-vgSNky_Kls-xgVlVU89qoTiO5C_FzJ2-sv5QQ6fsX",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8081/api/v1/customers/0f211eaf-2938-423c-be6e-74fc30018d5e",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"v1",
+						"customers",
+						"0f211eaf-2938-423c-be6e-74fc30018d5e"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

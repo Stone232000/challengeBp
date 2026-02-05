@@ -1,0 +1,668 @@
+{
+	"info": {
+		"_postman_id": "5100dbd2-8b6a-4ddf-bc66-bd5b671132d9",
+		"name": "account",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "20226346"
+	},
+	"item": [
+		{
+			"name": "accounts",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDM1OTkxMjYiLCJjdXN0b21lcklkIjoiZTVmYWNmYzAtNjQyMC00MjJkLTgxZjMtNzRmMjU2ZWFiZWIxIiwic3ViIjoiZTVmYWNmYzAtNjQyMC00MjJkLTgxZjMtNzRmMjU2ZWFiZWIxIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2MjgxNjAzMCwiZXhwIjoxNzYyOTAyNDMwfQ.3MHcTKnBqGaA5ToeMjAAOkiKOWruN6o_FNTKoigx7dodma5lWUAxJU502aKOQ3b4",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "Idempotency-Key",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  //\"accountNumber\": 478758,\n  \"accountType\": \"AHORRO\",\n  \"initialBalance\": 2000,\n  \"customerId\": \"0f211eaf-2938-423c-be6e-74fc30018d5e\",\n  \"state\": true\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8082/api/v1/accounts",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"accounts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "accounts",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwic3ViIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2Mjg0Mjg1MywiZXhwIjoxNzYyOTI5MjUzfQ.XmtvMKLm32u7lp88cavZg2F_FHAxAhnbIlmetrCNskelcxBZrvpJv4VJl8HUY69f",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/accounts?page=0&size=20&sort=createdAt%2Cdesc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"accounts"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "20"
+						},
+						{
+							"key": "sort",
+							"value": "createdAt%2Cdesc"
+						},
+						{
+							"key": "customerId",
+							"value": "abe1eb0d-c85c-4cb5-af38-4656b8205643",
+							"disabled": true
+						},
+						{
+							"key": "accountType",
+							"value": "AHORRO",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getByAccountNumber",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwic3ViIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2Mjg0Mjg1MywiZXhwIjoxNzYyOTI5MjUzfQ.XmtvMKLm32u7lp88cavZg2F_FHAxAhnbIlmetrCNskelcxBZrvpJv4VJl8HUY69f",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/accounts/1000000001",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"accounts",
+						"1000000001"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "patchAccount",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"state\": true,\n  \"reason\": \"Solicitud del cliente\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8082/api/v1/accounts/1000000002",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"accounts",
+						"1000000002"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getAccountBalance",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwic3ViIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2Mjg0Mjg1MywiZXhwIjoxNzYyOTI5MjUzfQ.XmtvMKLm32u7lp88cavZg2F_FHAxAhnbIlmetrCNskelcxBZrvpJv4VJl8HUY69f",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/accounts/1000000001/balance",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"accounts",
+						"1000000001",
+						"balance"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getMovements",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwic3ViIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2Mjg0Mjg1MywiZXhwIjoxNzYyOTI5MjUzfQ.XmtvMKLm32u7lp88cavZg2F_FHAxAhnbIlmetrCNskelcxBZrvpJv4VJl8HUY69f",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/movements?page=0&size=20&sort=createdAt%2Cdesc&accountNumber=1000000001",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"movements"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "0"
+						},
+						{
+							"key": "size",
+							"value": "20"
+						},
+						{
+							"key": "sort",
+							"value": "createdAt%2Cdesc"
+						},
+						{
+							"key": "movementType",
+							"value": "CREDITO",
+							"disabled": true
+						},
+						{
+							"key": "accountNumber",
+							"value": "1000000001"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "movements",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwic3ViIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2Mjg0Mjg1MywiZXhwIjoxNzYyOTI5MjUzfQ.XmtvMKLm32u7lp88cavZg2F_FHAxAhnbIlmetrCNskelcxBZrvpJv4VJl8HUY69f",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "Idempotency-Key",
+						"value": "550e8400-e29b-41d4-a716-446655440001"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"accountNumber\": 1000000001,\n  \"movementType\": \"CREDITO\",\n  \"amount\": 200,\n  \"description\": \"Depósito en efectivo\",\n  \"reference\": \"REF-2025-001\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8082/api/v1/movements",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"movements"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "reportStatement",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDM1OTkxMjYiLCJjdXN0b21lcklkIjoiZTVmYWNmYzAtNjQyMC00MjJkLTgxZjMtNzRmMjU2ZWFiZWIxIiwic3ViIjoiZTVmYWNmYzAtNjQyMC00MjJkLTgxZjMtNzRmMjU2ZWFiZWIxIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2MjgxNjAzMCwiZXhwIjoxNzYyOTAyNDMwfQ.3MHcTKnBqGaA5ToeMjAAOkiKOWruN6o_FNTKoigx7dodma5lWUAxJU502aKOQ3b4",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/reports/account-statement/0f211eaf-2938-423c-be6e-74fc30018d5e?startDate=2025-01-01&endDate=2025-12-31",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"reports",
+						"account-statement",
+						"0f211eaf-2938-423c-be6e-74fc30018d5e"
+					],
+					"query": [
+						{
+							"key": "startDate",
+							"value": "2025-01-01"
+						},
+						{
+							"key": "endDate",
+							"value": "2025-12-31"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "movementsSummary",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwic3ViIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2Mjg0Mjg1MywiZXhwIjoxNzYyOTI5MjUzfQ.XmtvMKLm32u7lp88cavZg2F_FHAxAhnbIlmetrCNskelcxBZrvpJv4VJl8HUY69f",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/reports/movements-summary?accountNumber=1000000001&customerId=0f211eaf-2938-423c-be6e-74fc30018d5e&startDate=2025-01-01&endDate=2025-12-31",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"reports",
+						"movements-summary"
+					],
+					"query": [
+						{
+							"key": "accountNumber",
+							"value": "1000000001"
+						},
+						{
+							"key": "customerId",
+							"value": "0f211eaf-2938-423c-be6e-74fc30018d5e"
+						},
+						{
+							"key": "startDate",
+							"value": "2025-01-01"
+						},
+						{
+							"key": "endDate",
+							"value": "2025-12-31"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getMovementByMovementId",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwic3ViIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2Mjg0Mjg1MywiZXhwIjoxNzYyOTI5MjUzfQ.XmtvMKLm32u7lp88cavZg2F_FHAxAhnbIlmetrCNskelcxBZrvpJv4VJl8HUY69f",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/movements/aa67950e-76cf-4787-96a9-8995c2e7b170",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"movements",
+						"aa67950e-76cf-4787-96a9-8995c2e7b170"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "reverseMovement",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzM4NCJ9.eyJpZGVudGlmaWNhdGlvbiI6IjA3MDU0NjM0MjAiLCJjdXN0b21lcklkIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwic3ViIjoiMjQ4NWMyZmItNWQzZS00NDA2LTkzOTYtYzBkNDJmYzY2MTcyIiwiaXNzIjoiYXBpLWN1c3RvbWVyLXNlcnZpY2UiLCJhdWQiOlsibnR0ZGF0YS1taWNyb3NlcnZpY2VzIl0sImlhdCI6MTc2Mjg0Mjg1MywiZXhwIjoxNzYyOTI5MjUzfQ.XmtvMKLm32u7lp88cavZg2F_FHAxAhnbIlmetrCNskelcxBZrvpJv4VJl8HUY69f",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "Idempotency-Key",
+						"value": "550e8400-e29b-41d4-a716-446655440002"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"reason\": \"Error en el monto de la transacción\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8082/api/v1/movements/aa67950e-76cf-4787-96a9-8995c2e7b170/reverse",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"movements",
+						"aa67950e-76cf-4787-96a9-8995c2e7b170",
+						"reverse"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deleteAccount",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "accept",
+						"value": "*/*"
+					},
+					{
+						"key": "X-Request-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					},
+					{
+						"key": "X-Correlation-Id",
+						"value": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8082/api/v1/accounts/1000000001",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8082",
+					"path": [
+						"api",
+						"v1",
+						"accounts",
+						"1000000001"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
