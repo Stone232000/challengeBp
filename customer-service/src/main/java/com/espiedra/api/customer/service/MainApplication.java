@@ -24,8 +24,7 @@ import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
  * - MapStruct (Object Mapping)
  * - OpenAPI Code Generation
  *
- * @author Darwin Pilaloa Zea
- * @version 1.0.0
+ * @version 1.0.1
  */
 @Slf4j
 @SpringBootApplication
