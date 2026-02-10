@@ -124,11 +124,6 @@ Microservicio reactivo de gestión de clientes y personas construido con Spring 
 
 ## 🚀 Instalación
 
-### 1. Clonar el repositorio
-```bash
-git clone https://github.com/Darwinpz/challenge.git
-cd challenge/api-customer-service
-```
 
 ### 2. Levantar infraestructura (PostgreSQL + Kafka)
 ```bash
@@ -399,9 +394,9 @@ kubectl apply -f helm/prod.yaml
 
 ## 👨‍💻 Autor
 
-**Darwin Pilaloa Zea**
+**Emilio Piedra**
 - Email: emiliopiedra2000@gmail.com
-- Assessment Técnico - Senior Spring Boot Developer
+- Assessment Técnico -  Spring Boot Developer
 
 ---
 
